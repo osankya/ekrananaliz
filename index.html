@@ -47,7 +47,8 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-right: 50px; 
-            letter-spacing: -1.5px; 
+            letter-spacing: -1.5px;
+            cursor: pointer;
         }
         
         .nav-tabs { 
@@ -76,11 +77,6 @@
             box-shadow: 0 2px 15px rgba(0,200,5,0.2); 
         }
         
-        .nav-tabs button:hover:not(.active) {
-            color: #fff;
-            background: #1a1d22;
-        }
-        
         .settings-btn {
             margin-left: auto;
             background: linear-gradient(135deg, #2b2f36 0%, #1a1d22 100%);
@@ -100,17 +96,90 @@
         .settings-btn:hover {
             background: linear-gradient(135deg, #3a3f47 0%, #2b2f36 100%);
             border-color: var(--green);
-            transform: translateY(-1px);
         }
         
         /* Grafik */
         #chart { 
             flex: 1; 
             padding: 15px; 
-            background: var(--bg); 
+            background: var(--bg);
+            cursor: pointer;
         }
 
-        /* Modal */
+        /* Detay Modal */
+        #detailModal { 
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: var(--card); 
+            width: 90%; 
+            max-width: 1200px;
+            max-height: 90vh; 
+            border-radius: 20px; 
+            z-index: 1001; 
+            border: 1px solid var(--border); 
+            flex-direction: column; 
+            box-shadow: 0 25px 60px rgba(0,0,0,0.9); 
+        }
+
+        .detail-header {
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-title {
+            font-size: 28px;
+            font-weight: 900;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-gray);
+            font-size: 28px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close-btn:hover { color: #fff; }
+
+        .time-tabs {
+            display: flex;
+            gap: 10px;
+            padding: 20px 30px;
+            background: #0a0b0d;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .time-tabs button {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-gray);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .time-tabs button.active {
+            background: var(--green);
+            color: #000;
+            border-color: var(--green);
+        }
+
+        #detailChart {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+        }
+
+        /* Settings Modal */
         #modal { 
             display: none; 
             position: fixed; 
@@ -250,25 +319,19 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 25px rgba(0,200,5,0.4);
         }
-        
-        .save-btn:active {
-            transform: translateY(0);
-        }
 
         /* Scrollbar */
-        .modal-body::-webkit-scrollbar { width: 8px; }
-        .modal-body::-webkit-scrollbar-track { background: transparent; }
-        .modal-body::-webkit-scrollbar-thumb { background: #2b2f36; border-radius: 10px; }
-        .modal-body::-webkit-scrollbar-thumb:hover { background: #3a3f47; }
+        .modal-body::-webkit-scrollbar, #detailChart::-webkit-scrollbar { width: 8px; }
+        .modal-body::-webkit-scrollbar-track, #detailChart::-webkit-scrollbar-track { background: transparent; }
+        .modal-body::-webkit-scrollbar-thumb, #detailChart::-webkit-scrollbar-thumb { background: #2b2f36; border-radius: 10px; }
     </style>
 </head>
 <body>
     <nav>
-        <div class="logo">EKRAN ANALİZ</div>
+        <div class="logo" onclick="location.reload()">EKRAN ANALİZ</div>
         <div class="nav-tabs">
             <button onclick="changeV('bist100')" id="b-bist100" class="active">BIST 100</button>
             <button onclick="changeV('mine')" id="b-mine">Favorilerim</button>
-            <button onclick="changeV('all')" id="b-all">Tüm Hisseler</button>
         </div>
         <button onclick="openM()" class="settings-btn">
             <span>⚙</span>
@@ -278,6 +341,7 @@
 
     <div id="chart"></div>
 
+    <!-- Settings Modal -->
     <div class="overlay" id="ov" onclick="closeM()"></div>
     <div id="modal">
         <div class="modal-header">
@@ -286,6 +350,23 @@
         </div>
         <div class="modal-body" id="stock-list"></div>
         <button class="save-btn" onclick="save()">✓ DEĞİŞİKLİKLERİ KAYDET</button>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="overlay" id="detailOv" onclick="closeDetail()"></div>
+    <div id="detailModal">
+        <div class="detail-header">
+            <div class="detail-title" id="detailTitle">-</div>
+            <button class="close-btn" onclick="closeDetail()">×</button>
+        </div>
+        <div class="time-tabs">
+            <button onclick="changeTime('1d')" id="t-1d" class="active">1 Gün</button>
+            <button onclick="changeTime('1mo')" id="t-1mo">1 Ay</button>
+            <button onclick="changeTime('6mo')" id="t-6mo">6 Ay</button>
+            <button onclick="changeTime('1y')" id="t-1y">1 Yıl</button>
+            <button onclick="changeTime('5y')" id="t-5y">5 Yıl</button>
+        </div>
+        <div id="detailChart"></div>
     </div>
 
     <script src="script.js"></script>

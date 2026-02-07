@@ -1,13 +1,15 @@
 let allD = [], 
     sel = JSON.parse(localStorage.getItem('sel')) || [], 
-    view = 'bist100';
+    view = 'bist100',
+    currentStock = null,
+    currentTime = '1d',
+    detailChartObj = null;
 
 async function init() {
     try {
         const r = await fetch('data.json');
         allD = await r.json();
         
-        // İlk açılışta varsayılan favoriler
         if (sel.length === 0) {
             sel = ["THYAO", "ASELS", "SASA", "AKBNK", "GARAN"];
             localStorage.setItem('sel', JSON.stringify(sel));
@@ -24,18 +26,12 @@ function upd() {
     let f;
     
     if (view === 'bist100') {
-        // BIST 100 - Tüm hisseler sektörlere göre
         f = allD;
-    } else if (view === 'mine') {
-        // Favorilerim - Sadece seçili hisseler
+    } else {
         f = allD.map(s => ({
             name: s.name, 
             data: s.data.filter(h => sel.includes(h.x))
         })).filter(s => s.data.length > 0);
-    } else {
-        // Tüm Hisseler - Sektör ayrımı olmadan
-        const allStocks = allD.flatMap(s => s.data);
-        f = [{ name: "TÜM HİSSELER", data: allStocks }];
     }
 
     const o = {
@@ -47,8 +43,15 @@ function upd() {
             background: 'transparent',
             animations: {
                 enabled: true,
-                speed: 600,
-                animateGradually: { enabled: true, delay: 150 }
+                speed: 600
+            },
+            events: {
+                dataPointSelection: function(event, chartContext, config) {
+                    const seriesIndex = config.seriesIndex;
+                    const dataPointIndex = config.dataPointIndex;
+                    const stock = f[seriesIndex].data[dataPointIndex].x;
+                    openDetail(stock);
+                }
             }
         },
         stroke: {
@@ -67,7 +70,7 @@ function upd() {
         dataLabels: {
             enabled: true,
             style: { 
-                fontSize: '14px', 
+                fontSize: '16px',  // Yazı boyutu artırıldı
                 fontWeight: '900',
                 fontFamily: 'Inter, sans-serif'
             },
@@ -76,13 +79,95 @@ function upd() {
         theme: { mode: 'dark' },
         tooltip: { 
             theme: 'dark', 
-            y: { formatter: v => "% " + v },
-            style: { fontSize: '13px' }
+            y: { formatter: v => "% " + v }
         }
     };
 
     document.querySelector("#chart").innerHTML = "";
     new ApexCharts(document.querySelector("#chart"), o).render();
+}
+
+// Detay sayfası aç
+async function openDetail(stock) {
+    currentStock = stock;
+    document.getElementById('detailTitle').textContent = stock + ".IS";
+    document.getElementById('detailModal').style.display = 'flex';
+    document.getElementById('detailOv').style.display = 'block';
+    
+    await loadDetailChart();
+}
+
+function closeDetail() {
+    document.getElementById('detailModal').style.display = 'none';
+    document.getElementById('detailOv').style.display = 'none';
+}
+
+async function changeTime(period) {
+    currentTime = period;
+    
+    // Buton aktifliği
+    ['1d', '1mo', '6mo', '1y', '5y'].forEach(p => {
+        document.getElementById('t-' + p).classList.toggle('active', p === period);
+    });
+    
+    await loadDetailChart();
+}
+
+async function loadDetailChart() {
+    try {
+        const symbol = currentStock + ".IS";
+        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${currentTime}&interval=${currentTime === '1d' ? '5m' : '1d'}`);
+        const data = await response.json();
+        
+        const timestamps = data.chart.result[0].timestamp;
+        const prices = data.chart.result[0].indicators.quote[0];
+        
+        const series = timestamps.map((t, i) => ({
+            x: new Date(t * 1000),
+            y: [prices.open[i], prices.high[i], prices.low[i], prices.close[i]]
+        }));
+        
+        const options = {
+            series: [{
+                name: currentStock,
+                data: series
+            }],
+            chart: {
+                type: 'candlestick',
+                height: 500,
+                background: 'transparent',
+                toolbar: { show: true }
+            },
+            plotOptions: {
+                candlestick: {
+                    colors: {
+                        upward: '#00c805',
+                        downward: '#ff3b30'
+                    }
+                }
+            },
+            xaxis: {
+                type: 'datetime',
+                labels: { style: { colors: '#848e9c' } }
+            },
+            yaxis: {
+                tooltip: { enabled: true },
+                labels: { style: { colors: '#848e9c' } }
+            },
+            grid: {
+                borderColor: '#262b33'
+            },
+            theme: { mode: 'dark' }
+        };
+        
+        document.getElementById('detailChart').innerHTML = '';
+        detailChartObj = new ApexCharts(document.querySelector("#detailChart"), options);
+        detailChartObj.render();
+        
+    } catch (e) {
+        console.error("Grafik yüklenemedi:", e);
+        document.getElementById('detailChart').innerHTML = '<p style="text-align:center; padding:50px; color:#848e9c;">Veri yüklenemedi</p>';
+    }
 }
 
 function openM() { 
@@ -145,7 +230,6 @@ function fltr() {
             if (matches) hasVisibleStock = true;
         });
         
-        // Sektör başlığını göster/gizle
         group.style.display = hasVisibleStock ? 'block' : 'none';
     });
 }
@@ -162,7 +246,6 @@ function changeV(v) {
     view = v;
     document.getElementById('b-bist100').classList.toggle('active', v === 'bist100');
     document.getElementById('b-mine').classList.toggle('active', v === 'mine');
-    document.getElementById('b-all').classList.toggle('active', v === 'all');
     upd();
 }
 
