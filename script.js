@@ -1,5 +1,5 @@
-let allD = [],           // BIST 100 için
-    allStocks = [],      // TÜM HİSSELER için (modal)
+let allD = [],           
+    allStocks = [],      
     sel = JSON.parse(localStorage.getItem('sel')) || [], 
     view = 'bist100',
     currentStock = null,
@@ -8,11 +8,9 @@ let allD = [],           // BIST 100 için
 
 async function init() {
     try {
-        // BIST 100 verisi
         const r1 = await fetch('data.json');
         allD = await r1.json();
         
-        // TÜM HİSSELER verisi (modal için)
         const r2 = await fetch('all_stocks.json');
         allStocks = await r2.json();
         
@@ -32,10 +30,8 @@ function upd() {
     let f;
     
     if (view === 'bist100') {
-        // İlk ekran: Sadece BIST 100
         f = allD;
     } else {
-        // Favorilerim: Tüm hisselerden seçilenleri göster
         f = allStocks.map(s => ({
             name: s.name, 
             data: s.data.filter(h => sel.includes(h.x))
@@ -64,14 +60,14 @@ function upd() {
         },
         stroke: {
             show: true,
-            width: 4,
-            colors: ['#0e1013']
+            width: 5,
+            colors: ['#0a0e27']
         },
-        // Renk sistemi: Yeşil/Kırmızı/Gri
+        // DÜZELTME: 0 = Gri, Pozitif = Yeşil, Negatif = Kırmızı
         colors: [({ value }) => {
-            if (value > 0) return '#00c805';      // Yeşil
-            if (value < 0) return '#ff3b30';     // Kırmızı
-            if (value = 0) return '#4a5568';      // Gri
+            if (value === 0) return '#6b7280';      // Gri (nötr)
+            if (value > 0) return '#16c784';        // Yeşil (pozitif)
+            return '#ea3943';                        // Kırmızı (negatif)
         }],
         plotOptions: {
             treemap: {
@@ -83,7 +79,7 @@ function upd() {
         dataLabels: {
             enabled: true,
             style: { 
-                fontSize: '18px',
+                fontSize: '20px',  // Daha büyük yazı
                 fontWeight: '900',
                 fontFamily: 'Inter, sans-serif',
                 colors: ['#ffffff']
@@ -92,8 +88,7 @@ function upd() {
         },
         theme: { mode: 'dark' },
         tooltip: { 
-            theme: 'dark', 
-            y: { formatter: v => "% " + v }
+            enabled: false  // TOOLTIP KAPALI
         }
     };
 
@@ -103,7 +98,7 @@ function upd() {
 
 async function openDetail(stock) {
     currentStock = stock;
-    document.getElementById('detailTitle').textContent = stock + ".IS";
+    document.getElementById('detailTitle').textContent = stock;
     document.getElementById('detailModal').style.display = 'flex';
     document.getElementById('detailOv').style.display = 'block';
     
@@ -131,13 +126,17 @@ async function loadDetailChart() {
         const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${currentTime}&interval=${currentTime === '1d' ? '5m' : '1d'}`);
         const data = await response.json();
         
+        if (!data.chart || !data.chart.result || !data.chart.result[0]) {
+            throw new Error('Veri yok');
+        }
+        
         const timestamps = data.chart.result[0].timestamp;
         const prices = data.chart.result[0].indicators.quote[0];
         
         const series = timestamps.map((t, i) => ({
             x: new Date(t * 1000),
             y: [prices.open[i], prices.high[i], prices.low[i], prices.close[i]]
-        }));
+        })).filter(s => s.y.every(v => v !== null && v !== undefined));
         
         const options = {
             series: [{
@@ -153,21 +152,24 @@ async function loadDetailChart() {
             plotOptions: {
                 candlestick: {
                     colors: {
-                        upward: '#00c805',
-                        downward: '#ff3b30'
+                        upward: '#16c784',
+                        downward: '#ea3943'
                     }
                 }
             },
             xaxis: {
                 type: 'datetime',
-                labels: { style: { colors: '#848e9c' } }
+                labels: { style: { colors: '#9ca3af' } }
             },
             yaxis: {
                 tooltip: { enabled: true },
-                labels: { style: { colors: '#848e9c' } }
+                labels: { 
+                    style: { colors: '#9ca3af' },
+                    formatter: (val) => val.toFixed(2)
+                }
             },
             grid: {
-                borderColor: '#262b33'
+                borderColor: '#1e2639'
             },
             theme: { mode: 'dark' }
         };
@@ -178,7 +180,7 @@ async function loadDetailChart() {
         
     } catch (e) {
         console.error("Grafik yüklenemedi:", e);
-        document.getElementById('detailChart').innerHTML = '<p style="text-align:center; padding:50px; color:#848e9c;">Veri yüklenemedi</p>';
+        document.getElementById('detailChart').innerHTML = '<p style="text-align:center; padding:50px; color:#9ca3af;">Veri yüklenemedi. Lütfen tekrar deneyin.</p>';
     }
 }
 
@@ -196,7 +198,6 @@ function list() {
     const l = document.getElementById('stock-list');
     let html = '';
     
-    // Modal'da TÜM HİSSELERİ göster
     allStocks.forEach(sector => {
         html += `<div class="sector-group">`;
         html += `<div class="sector-title">${sector.name}</div>`;

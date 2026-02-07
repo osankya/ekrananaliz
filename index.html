@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EKRAN ANALİZ | BIST 100 Heatmap</title>
+    <title>BIST365 | Borsa İstanbul Heatmap</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #0e1013; 
-            --card: #171a1e; 
-            --green: #00c805; 
-            --red: #ff3b30; 
-            --border: #262b33;
-            --text-gray: #848e9c;
+            --bg: #0a0e27; 
+            --card: #151a2e; 
+            --green: #16c784; 
+            --red: #ea3943; 
+            --gray: #6b7280;
+            --border: #1e2639;
+            --text-gray: #9ca3af;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,78 +33,81 @@
         
         /* Navbar */
         nav { 
-            background: #1b1e23; 
-            padding: 12px 30px; 
+            background: var(--card); 
+            padding: 14px 35px; 
             display: flex; 
             align-items: center; 
-            border-bottom: 2px solid var(--border);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         
         .logo { 
-            font-size: 24px; 
+            font-size: 26px; 
             font-weight: 900; 
-            background: linear-gradient(135deg, var(--green) 0%, #00ff88 100%);
+            background: linear-gradient(135deg, #16c784 0%, #22e0a1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-right: 50px; 
-            letter-spacing: -1.5px;
-            cursor: pointer;
+            letter-spacing: -1.5px; 
         }
         
         .nav-tabs { 
             display: flex; 
-            background: #0a0b0d; 
-            border-radius: 10px; 
-            padding: 5px; 
-            gap: 5px;
+            background: var(--bg); 
+            border-radius: 12px; 
+            padding: 6px; 
+            gap: 6px;
         }
         
         .nav-tabs button { 
             background: transparent; 
             border: none; 
             color: var(--text-gray); 
-            padding: 10px 24px; 
+            padding: 11px 26px; 
             cursor: pointer; 
-            border-radius: 8px; 
-            font-weight: 600;
+            border-radius: 9px; 
+            font-weight: 700;
             font-size: 14px;
             transition: all 0.3s ease;
         }
         
         .nav-tabs button.active { 
-            background: #2b2f36; 
-            color: #fff; 
-            box-shadow: 0 2px 15px rgba(0,200,5,0.2); 
+            background: var(--green); 
+            color: #000; 
+        }
+        
+        .nav-tabs button:hover:not(.active) {
+            color: #fff;
+            background: var(--card);
         }
         
         .settings-btn {
             margin-left: auto;
-            background: linear-gradient(135deg, #2b2f36 0%, #1a1d22 100%);
+            background: var(--card);
             border: 1px solid var(--border);
             color: white;
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 11px 22px;
+            border-radius: 11px;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 14px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 9px;
             transition: all 0.3s ease;
         }
         
         .settings-btn:hover {
-            background: linear-gradient(135deg, #3a3f47 0%, #2b2f36 100%);
+            background: var(--green);
+            color: #000;
             border-color: var(--green);
         }
         
         /* Grafik */
         #chart { 
             flex: 1; 
-            padding: 15px; 
-            background: var(--bg);
-            cursor: pointer;
+            padding: 20px; 
+            background: var(--bg); 
         }
 
         /* Detay Modal */
@@ -141,9 +145,14 @@
             background: transparent;
             border: none;
             color: var(--text-gray);
-            font-size: 28px;
+            font-size: 32px;
             cursor: pointer;
             transition: 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .close-btn:hover { color: #fff; }
@@ -152,7 +161,7 @@
             display: flex;
             gap: 10px;
             padding: 20px 30px;
-            background: #0a0b0d;
+            background: var(--bg);
             border-bottom: 1px solid var(--border);
         }
 
@@ -187,7 +196,7 @@
             left: 50%; 
             transform: translate(-50%, -50%); 
             background: var(--card); 
-            width: 520px; 
+            width: 540px; 
             max-height: 85vh; 
             border-radius: 20px; 
             z-index: 1001; 
@@ -197,21 +206,21 @@
         }
         
         .modal-header { 
-            padding: 25px; 
+            padding: 28px; 
             border-bottom: 1px solid var(--border); 
         }
         
         .modal-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 15px;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 16px;
             color: #fff;
         }
         
         .search-box { 
             width: 100%; 
-            padding: 14px 18px; 
-            background: #0a0b0d; 
+            padding: 15px 20px; 
+            background: var(--bg); 
             border: 2px solid var(--border); 
             color: #fff; 
             border-radius: 12px; 
@@ -223,67 +232,66 @@
         
         .search-box:focus {
             border-color: var(--green);
-            background: #12131a;
         }
         
         .modal-body { 
             overflow-y: auto; 
-            padding: 10px 15px; 
+            padding: 12px 18px; 
             flex: 1; 
         }
         
         .sector-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
         
         .sector-title {
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-gray);
-            padding: 12px 15px 8px;
+            padding: 14px 16px 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.7px;
         }
         
         .stock-row { 
             display: flex; 
             align-items: center; 
             justify-content: space-between; 
-            padding: 14px 15px; 
-            border-radius: 10px; 
+            padding: 15px 16px; 
+            border-radius: 11px; 
             cursor: pointer; 
             transition: all 0.2s ease;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         
         .stock-row:hover { 
-            background: #23272e; 
+            background: var(--bg); 
         }
         
         .stock-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
         
         .stock-code {
-            font-weight: 700;
+            font-weight: 800;
             font-size: 15px;
             color: #fff;
-            min-width: 70px;
+            min-width: 75px;
         }
         
         .stock-sector {
             font-size: 12px;
             color: var(--text-gray);
-            padding: 4px 10px;
-            background: #1a1d22;
-            border-radius: 6px;
+            padding: 5px 12px;
+            background: var(--bg);
+            border-radius: 7px;
         }
         
         .stock-row input[type="checkbox"] { 
-            width: 20px; 
-            height: 20px; 
+            width: 22px; 
+            height: 22px; 
             accent-color: var(--green);
             cursor: pointer;
         }
@@ -295,47 +303,47 @@
             left: 0; 
             width: 100%; 
             height: 100%; 
-            background: rgba(0,0,0,0.85); 
+            background: rgba(0,0,0,0.9); 
             z-index: 1000; 
-            backdrop-filter: blur(6px); 
+            backdrop-filter: blur(8px); 
         }
         
         .save-btn { 
-            margin: 20px 25px; 
-            padding: 16px; 
-            background: linear-gradient(135deg, var(--green) 0%, #00ff88 100%);
+            margin: 22px 28px; 
+            padding: 17px; 
+            background: linear-gradient(135deg, var(--green) 0%, #22e0a1 100%);
             border: none; 
-            border-radius: 12px; 
-            font-weight: 700; 
+            border-radius: 13px; 
+            font-weight: 800; 
             cursor: pointer; 
             font-size: 15px;
             color: #000;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,200,5,0.3);
+            box-shadow: 0 4px 15px rgba(22,199,132,0.4);
         }
         
         .save-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(0,200,5,0.4);
+            box-shadow: 0 6px 25px rgba(22,199,132,0.5);
         }
 
         /* Scrollbar */
         .modal-body::-webkit-scrollbar, #detailChart::-webkit-scrollbar { width: 8px; }
         .modal-body::-webkit-scrollbar-track, #detailChart::-webkit-scrollbar-track { background: transparent; }
-        .modal-body::-webkit-scrollbar-thumb, #detailChart::-webkit-scrollbar-thumb { background: #2b2f36; border-radius: 10px; }
+        .modal-body::-webkit-scrollbar-thumb, #detailChart::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
     </style>
 </head>
 <body>
     <nav>
-        <div class="logo" onclick="location.reload()">EKRAN ANALİZ</div>
+        <div class="logo" onclick="location.reload()">BIST365</div>
         <div class="nav-tabs">
             <button onclick="changeV('bist100')" id="b-bist100" class="active">BIST 100</button>
             <button onclick="changeV('mine')" id="b-mine">Favorilerim</button>
         </div>
         <button onclick="openM()" class="settings-btn">
             <span>⚙</span>
-            <span>Hisseleri Seç</span>
+            <span>Hisse Seç</span>
         </button>
     </nav>
 
@@ -346,10 +354,10 @@
     <div id="modal">
         <div class="modal-header">
             <div class="modal-title">📊 Hisse Seçimi</div>
-            <input type="text" class="search-box" id="srch" placeholder="Hisse kodu veya sektör ara... (Örn: SASA, Banka)" onkeyup="fltr()">
+            <input type="text" class="search-box" id="srch" placeholder="Hisse kodu veya sektör ara..." onkeyup="fltr()">
         </div>
         <div class="modal-body" id="stock-list"></div>
-        <button class="save-btn" onclick="save()">✓ DEĞİŞİKLİKLERİ KAYDET</button>
+        <button class="save-btn" onclick="save()">✓ KAYDET</button>
     </div>
 
     <!-- Detail Modal -->

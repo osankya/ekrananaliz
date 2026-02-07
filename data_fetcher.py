@@ -1,27 +1,24 @@
 import yfinance as yf
 import json
 
-# BIST 100 EKRANI - Sadece Önemli Hisseler (İlk ekranda gösterilecek)
+# BIST 100 EKRANI - En Büyük ve Likit Hisseler (Taşma olmasın)
 BIST100_HARITASI = {
-    "BANKA": ["AKBNK.IS", "GARAN.IS", "ISCTR.IS", "YKBNK.IS", "HALKB.IS"],
-    "SAVUNMA": ["ASELS.IS", "KORDS.IS", "SDTTR.IS"],
-    "HAVACILIK": ["THYAO.IS", "PGSUS.IS", "TAVHL.IS"],
-    "ENERJİ": ["AKSEN.IS", "AKENR.IS", "EUPWR.IS", "ODAS.IS"],
-    "HOLDİNG": ["KCHOL.IS", "SAHOL.IS", "DOHOL.IS", "AGHOL.IS"],
-    "TEKNOLOJİ": ["ASELS.IS", "LOGO.IS", "KAREL.IS", "LINK.IS"],
-    "PERAKENDE": ["BIMAS.IS", "MGROS.IS", "SOKM.IS", "MAVI.IS"],
-    "OTOMOTİV": ["FROTO.IS", "TOASO.IS", "TTRAK.IS", "TMSN.IS"],
-    "GIDA": ["ULKER.IS", "TATGD.IS", "CCOLA.IS", "AEFES.IS"],
-    "ÇİMENTO": ["KONYA.IS", "CIMSA.IS", "GOLTS.IS"],
-    "DEMİR-ÇELİK": ["EREGL.IS", "KRDMD.IS", "IZMDC.IS"],
-    "KİMYA": ["SASA.IS", "GUBRF.IS", "AKSA.IS", "TUPRS.IS"],
-    "SPOR": ["GSRAY.IS", "BJKAS.IS", "FENER.IS"],
-    "SİGORTA": ["AKGRT.IS", "AGESA.IS"],
-    "TELEKOMÜNİKASYON": ["TCELL.IS", "TTKOM.IS"],
-    "TURİZM": ["MAALT.IS", "AYCES.IS", "PKENT.IS"]
+    "BANKA": ["AKBNK.IS", "GARAN.IS", "ISCTR.IS", "YKBNK.IS"],
+    "SAVUNMA": ["ASELS.IS", "KORDS.IS"],
+    "HAVACILIK": ["THYAO.IS", "PGSUS.IS"],
+    "ENERJİ": ["AKSEN.IS", "AKENR.IS", "EUPWR.IS"],
+    "HOLDİNG": ["KCHOL.IS", "SAHOL.IS", "DOHOL.IS"],
+    "TEKNOLOJİ": ["LOGO.IS", "KAREL.IS"],
+    "PERAKENDE": ["BIMAS.IS", "MGROS.IS", "SOKM.IS"],
+    "OTOMOTİV": ["FROTO.IS", "TOASO.IS", "TTRAK.IS"],
+    "GIDA": ["ULKER.IS", "CCOLA.IS", "AEFES.IS"],
+    "ÇİMENTO": ["KONYA.IS", "CIMSA.IS"],
+    "DEMİR-ÇELİK": ["EREGL.IS", "KRDMD.IS"],
+    "KİMYA": ["SASA.IS", "GUBRF.IS", "TUPRS.IS"],
+    "SPOR": ["GSRAY.IS", "BJKAS.IS", "FENER.IS"]
 }
 
-# TÜM HİSSELER - Modal'da seçim için (Delist olanlar çıkarıldı)
+# TÜM HİSSELER - Modal'da seçim için
 TUM_HISSELER = {
     "BANKA": [
         "AKBNK.IS", "ISCTR.IS", "GARAN.IS", "YKBNK.IS", "HALKB.IS", "VAKBN.IS", 
@@ -214,7 +211,7 @@ def get_stock_data(symbol):
         return None
 
 def get_data():
-    # BIST 100 için veri (İlk ekranda gösterilecek)
+    # BIST 100 için veri
     bist100_data = []
     for sektor, semboller in BIST100_HARITASI.items():
         sektor_verisi = {"name": sektor, "data": []}
@@ -228,7 +225,7 @@ def get_data():
         if sektor_verisi["data"]:
             bist100_data.append(sektor_verisi)
     
-    # TÜM HİSSELER için veri (Modal'da seçim için)
+    # TÜM HİSSELER için veri
     tum_hisseler_data = []
     for sektor, semboller in TUM_HISSELER.items():
         sektor_verisi = {"name": sektor, "data": []}
@@ -254,7 +251,6 @@ def get_data():
     print(f"\n{'='*50}")
     print(f"✓ BIST 100: {bist100_count} hisse")
     print(f"✓ TÜM HİSSELER: {total_count} hisse")
-    print(f"✓ {len(bist100_data)} sektör")
     print(f"{'='*50}")
 
 if __name__ == "__main__":
