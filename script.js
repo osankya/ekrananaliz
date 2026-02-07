@@ -1,4 +1,5 @@
-let allD = [], 
+let allD = [],           // BIST 100 için
+    allStocks = [],      // TÜM HİSSELER için (modal)
     sel = JSON.parse(localStorage.getItem('sel')) || [], 
     view = 'bist100',
     currentStock = null,
@@ -7,8 +8,13 @@ let allD = [],
 
 async function init() {
     try {
-        const r = await fetch('data.json');
-        allD = await r.json();
+        // BIST 100 verisi
+        const r1 = await fetch('data.json');
+        allD = await r1.json();
+        
+        // TÜM HİSSELER verisi (modal için)
+        const r2 = await fetch('all_stocks.json');
+        allStocks = await r2.json();
         
         if (sel.length === 0) {
             sel = ["THYAO", "ASELS", "SASA", "AKBNK", "GARAN"];
@@ -26,9 +32,11 @@ function upd() {
     let f;
     
     if (view === 'bist100') {
+        // İlk ekran: Sadece BIST 100
         f = allD;
     } else {
-        f = allD.map(s => ({
+        // Favorilerim: Tüm hisselerden seçilenleri göster
+        f = allStocks.map(s => ({
             name: s.name, 
             data: s.data.filter(h => sel.includes(h.x))
         })).filter(s => s.data.length > 0);
@@ -59,7 +67,12 @@ function upd() {
             width: 4,
             colors: ['#0e1013']
         },
-        colors: [({ value }) => value > 0 ? '#00c805' : '#ff3b30'],
+        // Renk sistemi: Yeşil/Kırmızı/Gri
+        colors: [({ value }) => {
+            if (value > 0.5) return '#00c805';      // Yeşil
+            if (value < -0.5) return '#ff3b30';     // Kırmızı
+            return '#4a5568';                        // Gri
+        }],
         plotOptions: {
             treemap: {
                 distributed: true,
@@ -70,9 +83,10 @@ function upd() {
         dataLabels: {
             enabled: true,
             style: { 
-                fontSize: '16px',  // Yazı boyutu artırıldı
+                fontSize: '18px',
                 fontWeight: '900',
-                fontFamily: 'Inter, sans-serif'
+                fontFamily: 'Inter, sans-serif',
+                colors: ['#ffffff']
             },
             formatter: (text, op) => [text, op.value + "%"]
         },
@@ -87,7 +101,6 @@ function upd() {
     new ApexCharts(document.querySelector("#chart"), o).render();
 }
 
-// Detay sayfası aç
 async function openDetail(stock) {
     currentStock = stock;
     document.getElementById('detailTitle').textContent = stock + ".IS";
@@ -105,7 +118,6 @@ function closeDetail() {
 async function changeTime(period) {
     currentTime = period;
     
-    // Buton aktifliği
     ['1d', '1mo', '6mo', '1y', '5y'].forEach(p => {
         document.getElementById('t-' + p).classList.toggle('active', p === period);
     });
@@ -184,7 +196,8 @@ function list() {
     const l = document.getElementById('stock-list');
     let html = '';
     
-    allD.forEach(sector => {
+    // Modal'da TÜM HİSSELERİ göster
+    allStocks.forEach(sector => {
         html += `<div class="sector-group">`;
         html += `<div class="sector-title">${sector.name}</div>`;
         
