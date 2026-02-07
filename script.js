@@ -69,9 +69,9 @@ function upd() {
         },
         // Renk sistemi: Yeşil/Kırmızı/Gri
         colors: [({ value }) => {
-            if (value > 0.5) return '#00c805';      // Yeşil
-            if (value < -0.5) return '#ff3b30';     // Kırmızı
-            return '#4a5568';                        // Gri
+            if (value > 0) return '#00c805';      // Yeşil
+            if (value < 0) return '#ff3b30';     // Kırmızı
+            if (value = 0) return '#4a5568';      // Gri
         }],
         plotOptions: {
             treemap: {
