@@ -1,50 +1,40 @@
 import yfinance as yf
 import json
 
-# Senin listenden derlediğim genişletilmiş sektör haritası
-SEKTOR_HARITASI = {
-    "BANKA": ["AKBNK.IS", "ISCTR.IS", "GARAN.IS", "YKBNK.IS", "HALKB.IS", "VAKBN.IS", "SKBNK.IS", "ALBRK.IS"],
-    "SAVUNMA/TEKNOLOJİ": ["ASELS.IS", "SDTTR.IS", "MIATK.IS", "ARDYZ.IS", "REEDR.IS", "OTKAR.IS", "KFEIN.IS", "LOGOS.IS"],
-    "ENERJİ": ["ASTOR.IS", "EUPWR.IS", "SMRTG.IS", "KONTR.IS", "ALARK.IS", "CWENE.IS", "ODAS.IS", "ZOREN.IS", "AYDEM.IS", "ENJSA.IS", "HUNER.IS"],
-    "SANAYİ/METAL": ["SASA.IS", "HEKTS.IS", "EREGL.IS", "KRDMD.IS", "SISE.IS", "TOASO.IS", "FROTO.IS", "BRISA.IS", "KCAER.IS", "ARCLK.IS"],
-    "ULAŞTIRMA": ["THYAO.IS", "PGSUS.IS", "TAVHL.IS", "DOCO.IS", "TMSN.IS"],
-    "PERAKENDE/GIDA": ["BIMAS.IS", "MGROS.IS", "SOKM.IS", "AEFES.IS", "CCOLA.IS", "ULKER.IS", "TATGD.IS"],
-    "HOLDİNG/GAYRİMENKUL": ["KCHOL.IS", "SAHOL.IS", "AGHOL.IS", "DOHOL.IS", "EKGYO.IS", "OZKGY.IS", "TRGYO.IS"],
+SEKTORLER = {
+    "BANKA": ["AKBNK.IS", "ISCTR.IS", "GARAN.IS", "YKBNK.IS", "VAKBN.IS", "HALKB.IS"],
+    "ULAŞTIRMA": ["THYAO.IS", "PGSUS.IS", "TAVHL.IS"],
+    "SAVUNMA": ["ASELS.IS", "SDTTR.IS", "OTKAR.IS"],
+    "ENERJİ": ["ASTOR.IS", "SMRTG.IS", "KONTR.IS", "ODAS.IS", "ZOREN.IS"],
+    "SANAYİ": ["SASA.IS", "EREGL.IS", "KRDMD.IS", "SISE.IS", "FROTO.IS", "TOASO.IS"],
+    "GIDA": ["BIMAS.IS", "MGROS.IS", "CCOLA.IS"]
 }
 
-def get_data():
-    output = []
-    print("Piyasa değerleri ve veriler çekiliyor... Lütfen bekleyin.")
-    
-    for sektor, semboller in SEKTOR_HARITASI.items():
-        sektor_verisi = {"name": sektor, "data": []}
-        for sym in semboller:
+def fetch():
+    final_data = []
+    for sektor, listem in SEKTORLER.items():
+        node = {"name": sektor, "data": []}
+        for s in listem:
             try:
-                t = yf.Ticker(sym)
-                info = t.info
-                hist = t.history(period="2d")
+                t = yf.Ticker(s)
+                h = t.history(period="2d")
+                if len(h) < 2: continue
                 
-                if len(hist) < 2: continue
+                # y = Market Cap (Kutu Boyutu), c = Değişim (Renk)
+                mcap = t.info.get('marketCap', 1000)
+                change = ((h['Close'].iloc[-1] - h['Close'].iloc[-2]) / h['Close'].iloc[-2]) * 100
                 
-                # mcap: Piyasa Değeri (Kutu boyutu için)
-                # change: Yüzdelik değişim (Renk için)
-                mcap = info.get('marketCap', 1000000) # Değer yoksa min. değer
-                change = ((hist['Close'].iloc[-1] - hist['Close'].iloc[-2]) / hist['Close'].iloc[-2]) * 100
-                
-                sektor_verisi["data"].append({
-                    "x": sym.replace(".IS", ""),
-                    "y": mcap, 
+                node["data"].append({
+                    "x": s.replace(".IS", ""),
+                    "y": mcap,
                     "c": round(change, 2)
                 })
-                print(f"Bitti: {sym}")
+                print(f"Çekildi: {s}")
             except: continue
-        
-        if sektor_verisi["data"]:
-            output.append(sektor_verisi)
-            
+        if node["data"]: final_data.append(node)
+    
     with open('data.json', 'w') as f:
-        json.dump(output, f)
-    print("Veri tabanı güncellendi!")
+        json.dump(final_data, f)
 
 if __name__ == "__main__":
-    get_data()
+    fetch()
