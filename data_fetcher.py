@@ -1,47 +1,41 @@
 import yfinance as yf
 import json
 
-def verileri_cek():
-    # Takip etmek istediğin hisseler
-    hisseler = ["THYAO.IS", "TUPRS.IS", "ASELS.IS", "EREGL.IS", "AKBNK.IS", "BIMAS.IS", "SASAD.IS"]
-    sonuc_listesi = []
+# Örnek sektör eşleşmeleri (Daha fazlası eklenebilir)
+SEKTORLER = {
+    "THYAO": "Ulaştırma", "PGSUS": "Ulaştırma",
+    "ASELS": "Savunma", "SDTTR": "Savunma", "KORDS": "Savunma",
+    "EREGL": "Demir Çelik", "KRDMD": "Demir Çelik",
+    "AKBNK": "Banka", "ISCTR": "Banka", "GARAN": "Banka",
+    "SASA": "Kimya", "HEKTS": "Kimya",
+    "EUPWR": "Enerji", "ASTOR": "Enerji", "SMRTG": "Enerji", "KONTR": "Enerji"
+}
 
-    print("Borsa verileri çekiliyor...")
+def get_data():
+    # Buraya BIST'teki tüm sembolleri ekleyebilirsin
+    symbols = ["THYAO.IS", "ASELS.IS", "EREGL.IS", "AKBNK.IS", "SASA.IS", "ASTOR.IS", "ISCTR.IS", "GARAN.IS", "PGSUS.IS", "EUPWR.IS"]
+    data_list = []
 
-    for sembol in hisseler:
+    for sym in symbols:
         try:
-            hisse = yf.Ticker(sembol)
-            # 5 günlük veri çek (Hafta sonu boşluğunu kapatmak için en güvenli yol)
-            data = hisse.history(period="5d")
+            ticker = yf.Ticker(sym)
+            hist = ticker.history(period="2d")
+            if len(hist) < 2: continue
             
-            if len(data) < 2:
-                continue
-
-            fiyat = data['Close'].iloc[-1]
-            onceki_fiyat = data['Close'].iloc[-2]
-            degisim = round(((fiyat - onceki_fiyat) / onceki_fiyat) * 100, 2)
+            prev_close = hist['Close'].iloc[-2]
+            current_price = hist['Close'].iloc[-1]
+            change = ((current_price - prev_close) / prev_close) * 100
             
-            # Renk: Artış varsa yeşil, düşüş varsa kırmızı
-            renk = "#22c55e" if degisim >= 0 else "#ef4444"
-
-            sonuc_listesi.append({
-                "x": sembol.replace(".IS", ""), # Ekranda 'THYAO.IS' yerine 'THYAO' yazar
-                "y": abs(degisim) + 1,          # Kutunun büyüklüğü
-                "d": degisim,                   # Gerçek değişim oranı
-                "f": round(fiyat, 2),           # Güncel fiyat
-                "fillColor": renk
+            clean_sym = sym.replace(".IS", "")
+            data_list.append({
+                "x": clean_sym,
+                "y": round(change, 2),
+                "s": SEKTORLER.get(clean_sym, "Diğer") # Sektör bilgisi
             })
-            print(f"Başarılı: {sembol}")
-        except Exception as e:
-            print(f"Hata oluştu ({sembol}): {e}")
+        except:
+            continue
+            
+    with open('data.json', 'w') as f:
+        json.dump(data_list, f)
 
-    # Verileri data.json dosyasına kaydet
-    with open("data.json", "w") as f:
-        json.dump(sonuc_listesi, f)
-    
-    print("\n--- İŞLEM TAMAM ---")
-    print("data.json dosyası başarıyla oluşturuldu.")
-
-# Kodu çalıştıran ana kısım
-if __name__ == "__main__":
-    verileri_cek()
+get_data()

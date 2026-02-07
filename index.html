@@ -2,18 +2,36 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EKRAN ANALİZ | Canlı Borsa</title>
+    <title>EKRAN ANALİZ PRO</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        body { background-color: #0e1013; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
-        h1 { text-align: center; color: #00e396; margin-bottom: 30px; }
-        #chart { width: 100%; height: 600px; background: #1b1e23; border-radius: 8px; padding: 10px; }
+        body { background: #0a0b0d; color: white; font-family: sans-serif; margin: 0; }
+        nav { background: #14151a; padding: 15px; display: flex; gap: 20px; border-bottom: 1px solid #2d2e33; }
+        nav button { background: #2d2e33; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        nav button.active { background: #0ecb81; }
+        #chart { height: calc(100vh - 80px); padding: 20px; }
+        /* Modal (Hisse Seçme Alanı) */
+        #settings-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1c1f26; padding: 20px; border-radius: 10px; z-index: 100; border: 1px solid #0ecb81; }
     </style>
 </head>
 <body>
-    <h1>EKRAN ANALİZ</h1>
-    <div id="chart"></div>
-    <script src="script.js"></script>
+
+<nav>
+    <h2 style="margin:0; margin-right:20px; color:#0ecb81;">EKRAN ANALİZ</h2>
+    <button onclick="changeView('bist100')" id="btn-bist100" class="active">BIST 100</button>
+    <button onclick="changeView('all')">Tüm Hisseler</button>
+    <button onclick="showMyPage()">Benim Sayfam</button>
+    <button onclick="document.getElementById('settings-modal').style.display='block'" style="margin-left:auto;">⚙ Hisseleri Seç</button>
+</nav>
+
+<div id="chart"></div>
+
+<div id="settings-modal">
+    <h3>Takip Etmek İstediğin Hisseleri Yaz</h3>
+    <input type="text" id="my-stocks-input" placeholder="THYAO,ASELS,EREGL" style="width:100%; padding:10px; margin-bottom:10px;">
+    <button onclick="saveMyStocks()">Kaydet ve Kapat</button>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>

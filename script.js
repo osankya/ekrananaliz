@@ -1,52 +1,52 @@
-async function veriyiGetir() {
-    try {
-        // data.json dosyasını oku
-        const response = await fetch('data.json');
-        
-        if (!response.ok) {
-            throw new Error('Veri dosyası (data.json) bulunamadı!');
-        }
+let allData = [];
+let currentView = 'bist100';
 
-        const borsaVerisi = await response.json();
-        
-        // ApexCharts ile Treemap (Kutu) grafiğini oluştur
-        var options = {
-            series: [{
-                data: borsaVerisi
-            }],
-            legend: {
-                show: false
-            },
-            chart: {
-                height: '100%',
-                type: 'treemap',
-                toolbar: { show: false }
-            },
-            title: {
-                text: 'BIST 100 ISI HARİTASI',
-                align: 'center',
-                style: { color: '#fff', fontSize: '20px' }
-            },
-            theme: {
-                mode: 'dark'
-            },
-            plotOptions: {
-                treemap: {
-                    distributed: true,
-                    enableShades: false
-                }
-            }
-        };
-
-        var chart = new ApexCharts(document.querySelector("#chart"), options);
-        chart.render();
-        console.log("Grafik başarıyla yüklendi.");
-
-    } catch (error) {
-        console.error("Hata detayı:", error);
-        document.body.innerHTML += `<h2 style="color:red; text-align:center;">Bir hata oluştu: ${error.message}</h2>`;
-    }
+async function init() {
+    const res = await fetch('data.json');
+    allData = await res.json();
+    renderTreemap(allData);
 }
 
-// Fonksiyonu çalıştır
-veriyiGetir();
+function renderTreemap(data) {
+    // Sektörlere göre gruplama yapıyoruz
+    const options = {
+        series: [{ data: data }],
+        chart: { type: 'treemap', height: '100%', toolbar: {show:false} },
+        colors: [({ value }) => value > 0 ? '#0ecb81' : '#f6465d'],
+        plotOptions: {
+            treemap: {
+                distributed: true,
+                enableShades: false
+            }
+        },
+        tooltip: {
+            custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                const item = w.config.series[seriesIndex].data[dataPointIndex];
+                return `<div style="padding:10px; background:#1c1f26;">
+                    <b>${item.x}</b> <br>
+                    Sektör: ${item.s} <br>
+                    Değişim: %${item.y}
+                </div>`;
+            }
+        }
+    };
+    
+    document.querySelector("#chart").innerHTML = "";
+    const chart = new ApexCharts(document.querySelector("#chart"), options);
+    chart.render();
+}
+
+function showMyPage() {
+    const myStocks = localStorage.getItem('myStocks')?.split(',') || [];
+    const filtered = allData.filter(d => myStocks.includes(d.x));
+    renderTreemap(filtered);
+}
+
+function saveMyStocks() {
+    const input = document.getElementById('my-stocks-input').value.toUpperCase().replace(/\s/g, '');
+    localStorage.setItem('myStocks', input);
+    document.getElementById('settings-modal').style.display = 'none';
+    showMyPage();
+}
+
+init();
