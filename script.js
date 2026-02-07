@@ -1,52 +1,95 @@
-let allData = [];
-let currentView = 'bist100';
+let allData = []; // API'den gelen ham veri
+let selectedStocks = JSON.parse(localStorage.getItem('selectedStocks')) || ["THYAO", "ASELS", "SASA"];
+let currentView = 'all';
 
-async function init() {
+async function loadData() {
     const res = await fetch('data.json');
     allData = await res.json();
-    renderTreemap(allData);
+    updateChart();
+    renderStockList();
 }
 
-function renderTreemap(data) {
-    // Sektörlere göre gruplama yapıyoruz
+function updateChart() {
+    let filteredData;
+    
+    if (currentView === 'mine') {
+        // Sadece seçili hisseleri filtrele ama sektörel yapıyı bozma
+        filteredData = allData.map(sektor => ({
+            name: sektor.name,
+            data: sektor.data.filter(hisse => selectedStocks.includes(hisse.x))
+        })).filter(sektor => sektor.data.length > 0);
+    } else {
+        filteredData = allData;
+    }
+
     const options = {
-        series: [{ data: data }],
-        chart: { type: 'treemap', height: '100%', toolbar: {show:false} },
+        series: filteredData,
+        legend: { show: false },
+        chart: { type: 'treemap', height: '100%', toolbar: { show: false } },
         colors: [({ value }) => value > 0 ? '#0ecb81' : '#f6465d'],
         plotOptions: {
-            treemap: {
-                distributed: true,
-                enableShades: false
-            }
+            treemap: { distributed: true, enableShades: false }
         },
-        tooltip: {
-            custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                const item = w.config.series[seriesIndex].data[dataPointIndex];
-                return `<div style="padding:10px; background:#1c1f26;">
-                    <b>${item.x}</b> <br>
-                    Sektör: ${item.s} <br>
-                    Değişim: %${item.y}
-                </div>`;
-            }
-        }
+        tooltip: { theme: 'dark' }
     };
-    
+
     document.querySelector("#chart").innerHTML = "";
     const chart = new ApexCharts(document.querySelector("#chart"), options);
     chart.render();
 }
 
-function showMyPage() {
-    const myStocks = localStorage.getItem('myStocks')?.split(',') || [];
-    const filtered = allData.filter(d => myStocks.includes(d.x));
-    renderTreemap(filtered);
+// Modal ve Arama İşlemleri
+function openModal() {
+    document.getElementById('selection-modal').style.display = 'flex';
+    document.getElementById('overlay').style.display = 'block';
 }
 
-function saveMyStocks() {
-    const input = document.getElementById('my-stocks-input').value.toUpperCase().replace(/\s/g, '');
-    localStorage.setItem('myStocks', input);
-    document.getElementById('settings-modal').style.display = 'none';
-    showMyPage();
+function closeModal() {
+    document.getElementById('selection-modal').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
 }
 
-init();
+function renderStockList() {
+    const list = document.getElementById('stock-list');
+    list.innerHTML = "";
+    
+    // Tüm hisseleri düz listeye çevir
+    const flatStocks = allData.flatMap(s => s.data);
+
+    flatStocks.forEach(stock => {
+        const isChecked = selectedStocks.includes(stock.x) ? 'checked' : '';
+        const item = document.createElement('div');
+        item.className = 'stock-item';
+        item.innerHTML = `
+            <input type="checkbox" id="check-${stock.x}" ${isChecked} value="${stock.x}">
+            <label for="check-${stock.x}">${stock.x}</label>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function filterStocks() {
+    const query = document.getElementById('stock-search').value.toUpperCase();
+    const items = document.querySelectorAll('.stock-item');
+    items.forEach(item => {
+        const text = item.innerText.toUpperCase();
+        item.style.display = text.includes(query) ? 'flex' : 'none';
+    });
+}
+
+function saveSelection() {
+    const checkboxes = document.querySelectorAll('#stock-list input[type="checkbox"]:checked');
+    selectedStocks = Array.from(checkboxes).map(cb => cb.value);
+    localStorage.setItem('selectedStocks', JSON.stringify(selectedStocks));
+    closeModal();
+    if(currentView === 'mine') updateChart();
+}
+
+function setView(view) {
+    currentView = view;
+    document.getElementById('btn-all').classList.toggle('active', view === 'all');
+    document.getElementById('btn-mine').classList.toggle('active', view === 'mine');
+    updateChart();
+}
+
+loadData();
