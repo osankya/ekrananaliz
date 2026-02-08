@@ -1,26 +1,22 @@
 import yfinance as yf
 import json
-import requests
-from datetime import datetime, timedelta
 
-# BIST 100 EKRANI - Sadece En Büyük 30 Hisse (Ekrana Sığsın)
+# BIST 100 EKRANI - SADECE 15 EN BÜYÜK HİSSE (EKRANA SIĞ)
 BIST100_HARITASI = {
     "BANKA": ["AKBNK.IS", "GARAN.IS", "YKBNK.IS"],
+    "HAVACILIK": ["THYAO.IS"],
     "SAVUNMA": ["ASELS.IS"],
-    "HAVACILIK": ["THYAO.IS", "PGSUS.IS"],
-    "ENERJİ": ["AKSEN.IS", "AKENR.IS"],
+    "ENERJİ": ["AKSEN.IS"],
     "HOLDİNG": ["KCHOL.IS", "SAHOL.IS"],
-    "TEKNOLOJİ": ["LOGO.IS"],
     "PERAKENDE": ["BIMAS.IS", "MGROS.IS"],
-    "OTOMOTİV": ["FROTO.IS", "TOASO.IS"],
-    "GIDA": ["ULKER.IS", "CCOLA.IS"],
+    "OTOMOTİV": ["FROTO.IS"],
+    "GIDA": ["ULKER.IS"],
     "ÇİMENTO": ["KONYA.IS"],
-    "DEMİR-ÇELİK": ["EREGL.IS"],
-    "KİMYA": ["SASA.IS", "GUBRF.IS"],
-    "SPOR": ["GSRAY.IS", "BJKAS.IS"]
+    "KİMYA": ["SASA.IS"],
+    "SPOR": ["GSRAY.IS"]
 }
 
-# TÜM HİSSELER - Modal'da seçim için
+# TÜM HİSSELER - AYNI KALSIN
 TUM_HISSELER = {
     "BANKA": [
         "AKBNK.IS", "ISCTR.IS", "GARAN.IS", "YKBNK.IS", "HALKB.IS", "VAKBN.IS", 
@@ -85,7 +81,6 @@ TUM_HISSELER = {
 }
 
 def get_stock_data(symbol):
-    """Tek bir hisse için veri çeker"""
     try:
         t = yf.Ticker(symbol)
         h = t.history(period="5d")
@@ -115,33 +110,26 @@ def get_stock_data(symbol):
         return None
 
 def calculate_fear_greed_index():
-    """BIST Korku & Açgözlülük Endeksi Hesaplar"""
     try:
-        # XU100 için veri çek
         xu100 = yf.Ticker("XU100.IS")
         hist = xu100.history(period="6mo")
         
         if len(hist) < 125:
-            return {"score": 50, "status": "Nötr", "data": []}
+            return {"score": 50, "status": "Nötr", "data": [], "components": {"momentum": 50, "volatility": 50, "volume": 50, "breadth": 50}}
         
-        # 1. Momentum (25 puan) - 125 günlük momentum
         current_price = hist['Close'].iloc[-1]
         ma_125 = hist['Close'].rolling(window=125).mean().iloc[-1]
         momentum_score = min(100, max(0, ((current_price / ma_125 - 1) * 500) + 50))
         
-        # 2. Volatilite (25 puan) - 50 günlük standart sapma
         volatility = hist['Close'].pct_change().rolling(window=50).std().iloc[-1]
         volatility_score = max(0, min(100, 100 - (volatility * 1000)))
         
-        # 3. Hacim (25 puan) - Hacim değişimi
         avg_volume = hist['Volume'].rolling(window=50).mean().iloc[-1]
         current_volume = hist['Volume'].iloc[-1]
         volume_score = min(100, max(0, (current_volume / avg_volume - 1) * 100 + 50))
         
-        # 4. Piyasa Genişliği (25 puan) - Yükselen hisse sayısı
-        breadth_score = 50  # Basitleştirilmiş
+        breadth_score = 50
         
-        # Toplam skor
         total_score = (
             momentum_score * 0.25 +
             volatility_score * 0.25 +
@@ -149,7 +137,6 @@ def calculate_fear_greed_index():
             breadth_score * 0.25
         )
         
-        # Durum belirleme
         if total_score >= 75:
             status = "Aşırı Açgözlülük"
         elif total_score >= 55:
@@ -161,12 +148,10 @@ def calculate_fear_greed_index():
         else:
             status = "Aşırı Korku"
         
-        # Son 30 günlük veri
         recent_data = []
         for i in range(min(30, len(hist))):
             idx = -(30-i)
             date = hist.index[idx].strftime('%Y-%m-%d')
-            # Basitleştirilmiş günlük skor
             daily_score = 50 + (hist['Close'].iloc[idx] / ma_125 - 1) * 100
             daily_score = max(0, min(100, daily_score))
             recent_data.append({"date": date, "score": round(daily_score, 1)})
@@ -184,10 +169,9 @@ def calculate_fear_greed_index():
         }
     except Exception as e:
         print(f"Korku endeksi hatası: {e}")
-        return {"score": 50, "status": "Nötr", "data": []}
+        return {"score": 50, "status": "Nötr", "data": [], "components": {"momentum": 50, "volatility": 50, "volume": 50, "breadth": 50}}
 
 def get_data():
-    # BIST 100 için veri
     bist100_data = []
     for sektor, semboller in BIST100_HARITASI.items():
         sektor_verisi = {"name": sektor, "data": []}
@@ -201,7 +185,6 @@ def get_data():
         if sektor_verisi["data"]:
             bist100_data.append(sektor_verisi)
     
-    # TÜM HİSSELER için veri
     tum_hisseler_data = []
     for sektor, semboller in TUM_HISSELER.items():
         sektor_verisi = {"name": sektor, "data": []}
@@ -214,10 +197,8 @@ def get_data():
         if sektor_verisi["data"]:
             tum_hisseler_data.append(sektor_verisi)
     
-    # Korku endeksi hesapla
     fear_index = calculate_fear_greed_index()
     
-    # Dosyaları kaydet
     with open('data.json', 'w', encoding='utf-8') as f:
         json.dump(bist100_data, f, ensure_ascii=False, indent=2)
     

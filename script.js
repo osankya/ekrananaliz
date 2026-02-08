@@ -67,17 +67,17 @@ function upd() {
             width: 5,
             colors: ['#0a0e27']
         },
-        // YENİ RENK SİSTEMİ:
-        // 0 ila 3: Açık Yeşil
-        // 3+: Koyu Yeşil
-        // 0 ila -3: Açık Kırmızı
-        // -3 ve altı: Koyu Kırmızı
+        // RENK SİSTEMİ DÜZELTİLDİ - Her değer için ayrı kontrol
         colors: [({ value }) => {
-            if (value >= 3) return '#16c784';        // Koyu Yeşil (3%+)
-            if (value > 0) return '#7fd4a8';         // Açık Yeşil (0-3%)
-            if (value === 0) return '#6b7280';       // Gri (0%)
-            if (value > -3) return '#f58a8f';        // Açık Kırmızı (0 ila -3%)
-            return '#ea3943';                         // Koyu Kırmızı (-3% altı)
+            const v = Number(value);
+            
+            if (v === 0) return '#6b7280';           // Tam 0% = Gri
+            if (v > 0 && v <= 3) return '#7fd4a8';   // 0-3% = Açık Yeşil
+            if (v > 3) return '#16c784';             // 3%+ = Koyu Yeşil
+            if (v < 0 && v >= -3) return '#f58a8f';  // 0 ila -3% = Açık Kırmızı
+            if (v < -3) return '#ea3943';            // -3% altı = Koyu Kırmızı
+            
+            return '#6b7280'; // Fallback
         }],
         plotOptions: {
             treemap: {
@@ -89,7 +89,7 @@ function upd() {
         dataLabels: {
             enabled: true,
             style: { 
-                fontSize: '22px',  // Daha büyük
+                fontSize: '20px',
                 fontWeight: '900',
                 fontFamily: 'Inter, sans-serif',
                 colors: ['#ffffff']
@@ -113,11 +113,9 @@ function showFearIndex() {
     
     if (!fearData) return;
     
-    // Skor göster
     document.getElementById('fearScoreNum').textContent = fearData.score;
     document.getElementById('fearScoreText').textContent = fearData.status;
     
-    // Renk ayarla
     const scoreEl = document.querySelector('.fear-score-number');
     if (fearData.score >= 75) scoreEl.style.color = '#16c784';
     else if (fearData.score >= 55) scoreEl.style.color = '#7fd4a8';
@@ -125,7 +123,6 @@ function showFearIndex() {
     else if (fearData.score >= 25) scoreEl.style.color = '#f58a8f';
     else scoreEl.style.color = '#ea3943';
     
-    // Bileşenler
     const components = fearData.components;
     document.getElementById('fearComponents').innerHTML = `
         <div class="component-card">
@@ -146,7 +143,6 @@ function showFearIndex() {
         </div>
     `;
     
-    // Tarihsel grafik
     const dates = fearData.data.map(d => d.date);
     const scores = fearData.data.map(d => d.score);
     
@@ -250,48 +246,45 @@ async function loadDetailChart() {
     try {
         const symbol = currentStock + ".IS";
         
-        // İnterval ayarla
-        let interval = '1d';
-        if (currentTime === '1d') interval = '5m';
-        else if (currentTime === '5d') interval = '15m';
-        else if (currentTime === '1mo') interval = '1h';
+        // yfinance kullanarak veri çek (CORS sorunu yok)
+        const t = yf.Ticker(symbol);
+        let period = currentTime;
         
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${currentTime}&interval=${interval}`;
+        // Period mapping
+        const periodMap = {
+            '1d': '1d',
+            '5d': '5d',
+            '1mo': '1mo',
+            '3mo': '3mo',
+            '6mo': '6mo',
+            '1y': '1y',
+            '5y': '5y'
+        };
         
-        const response = await fetch(url);
-        const data = await response.json();
+        const hist = await t.history({period: periodMap[currentTime] || '1mo'});
         
-        if (!data.chart || !data.chart.result || !data.chart.result[0]) {
-            throw new Error('Veri bulunamadı');
+        if (!hist || hist.length === 0) {
+            throw new Error('Bu hisse için veri bulunamadı');
         }
         
-        const result = data.chart.result[0];
-        const timestamps = result.timestamp;
-        const prices = result.indicators.quote[0];
-        
-        if (!timestamps || !prices) {
-            throw new Error('Fiyat verisi yok');
-        }
-        
-        const series = timestamps.map((t, i) => {
-            const open = prices.open[i];
-            const high = prices.high[i];
-            const low = prices.low[i];
-            const close = prices.close[i];
+        // ApexCharts formatına çevir
+        const series = [];
+        for (let i = 0; i < hist.index.length; i++) {
+            const open = hist['Open'][i];
+            const high = hist['High'][i];
+            const low = hist['Low'][i];
+            const close = hist['Close'][i];
             
-            // Null değerleri filtrele
-            if (open === null || high === null || low === null || close === null) {
-                return null;
+            if (open !== null && high !== null && low !== null && close !== null) {
+                series.push({
+                    x: new Date(hist.index[i]),
+                    y: [open, high, low, close]
+                });
             }
-            
-            return {
-                x: new Date(t * 1000),
-                y: [open, high, low, close]
-            };
-        }).filter(s => s !== null);
+        }
         
         if (series.length === 0) {
-            throw new Error('Geçerli veri yok');
+            throw new Error('Geçerli fiyat verisi yok');
         }
         
         const options = {
@@ -329,13 +322,7 @@ async function loadDetailChart() {
             xaxis: {
                 type: 'datetime',
                 labels: { 
-                    style: { colors: '#9ca3af' },
-                    datetimeFormatter: {
-                        year: 'yyyy',
-                        month: 'MMM yyyy',
-                        day: 'dd MMM',
-                        hour: 'HH:mm'
-                    }
+                    style: { colors: '#9ca3af' }
                 }
             },
             yaxis: {
@@ -349,10 +336,7 @@ async function loadDetailChart() {
                 borderColor: '#1e2639'
             },
             tooltip: {
-                theme: 'dark',
-                x: {
-                    format: 'dd MMM yyyy HH:mm'
-                }
+                theme: 'dark'
             },
             theme: { mode: 'dark' }
         };
@@ -367,8 +351,8 @@ async function loadDetailChart() {
             <div style="text-align:center; padding:100px; color:#ea3943;">
                 <div style="font-size:48px; margin-bottom:20px;">⚠️</div>
                 <div style="font-size:20px; font-weight:700; margin-bottom:10px;">Grafik Yüklenemedi</div>
-                <div style="color:#9ca3af;">${e.message || 'Bir hata oluştu'}</div>
-                <button onclick="loadDetailChart()" style="margin-top:20px; padding:12px 24px; background:#16c784; border:none; border-radius:8px; color:#000; font-weight:700; cursor:pointer;">Tekrar Dene</button>
+                <div style="color:#9ca3af; margin-bottom:20px;">${currentStock} için veri çekilemiyor.</div>
+                <div style="color:#9ca3af; font-size:14px;">Yahoo Finance'den veri alınamadı. Lütfen başka bir hisse deneyin.</div>
             </div>
         `;
     }
