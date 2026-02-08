@@ -107,19 +107,22 @@
         }
         
         #chart { 
-            flex: 1; 
-            padding: 20px; 
-            background: var(--bg); 
-        }
+    flex: 1; 
+    padding: 15px;     /* 20px'ten 15px'e düşürdüm */
+    background: var(--bg);
+    overflow: hidden;  /* TAŞMAYI ENGELLE */
+    max-height: calc(100vh - 70px); /* NAV YÜKSEKLIĞINI ÇIKAR */
+}
 
         /* Fear Index Page */
         #fearPage {
-            display: none;
-            flex: 1;
-            padding: 40px;
-            background: var(--bg);
-            overflow-y: auto;
-        }
+    display: none;
+    flex: 1;
+    padding: 30px;     /* 40px'ten 30px'e düşürdüm */
+    background: var(--bg);
+    overflow-y: auto;
+    max-height: calc(100vh - 70px); /* NAV YÜKSEKLIĞINI ÇIKAR */
+}
 
         .fear-container {
             max-width: 900px;
