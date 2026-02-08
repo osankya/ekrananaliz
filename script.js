@@ -1,104 +1,97 @@
-let allData = [], allStocks = [], currentView = 'bist100';
+let allData = [], fearScore = 50;
 
 async function init() {
     try {
         const r1 = await fetch('data.json');
         allData = await r1.json();
-        const r2 = await fetch('all_stocks.json');
-        allStocks = await r2.json();
+        const r2 = await fetch('fear_index.json');
+        const f = await r2.json();
+        fearScore = f.score;
         renderChart();
     } catch (e) {
-        console.error("Dosyalar bulunamadı. Önce Python scriptini çalıştırın.");
+        console.error("Veri yükleme hatası!");
     }
 }
 
 function renderChart() {
-    const displayData = (currentView === 'bist100') ? allData : allStocks;
+    const processedData = allData.map(sector => ({
+        name: sector.name,
+        data: sector.data.map(s => {
+            // RENK MANTIĞI: ASLA ŞAŞMAZ
+            let c = '#4b5563'; // Nötr
+            if (s.y >= 3) c = '#064e3b';        // KOYU YEŞİL
+            else if (s.y > 0) c = '#10b981';    // AÇIK YEŞİL
+            else if (s.y <= -3) c = '#7f1d1d';  // KOYU KIRMIZI
+            else if (s.y < 0) c = '#ef4444';    // AÇIK KIRMIZI
+            
+            return { x: s.x, y: s.y, fillColor: c };
+        })
+    }));
 
     const options = {
-        series: displayData,
+        series: processedData,
         chart: {
             type: 'treemap',
             height: '100%',
             toolbar: { show: false },
             events: {
-                dataPointSelection: (event, chartContext, config) => {
-                    const stock = displayData[config.seriesIndex].data[config.dataPointIndex].x;
+                dataPointSelection: (e, chart, config) => {
+                    const stock = processedData[config.seriesIndex].data[config.dataPointIndex].x;
                     openDetail(stock);
                 }
             }
         },
-        // İSTEDİĞİN RENK MANTIĞI BURADA
-        colors: [function({ value }) {
-            if (value >= 3) return '#064e3b';      // Koyu Yeşil
-            if (value > 0) return '#10b981';       // Açık Yeşil
-            if (value <= -3) return '#7f1d1d';     // Koyu Kırmızı
-            if (value < 0) return '#ef4444';       // Açık Kırmızı
-            return '#4b5563';                      // Nötr (0)
-        }],
-        plotOptions: {
-            treemap: {
-                distributed: true,
-                enableShades: false,
-                dataLabels: { format: 'scale' }
-            }
-        },
+        plotOptions: { treemap: { distributed: true, enableShades: false } },
         dataLabels: {
             enabled: true,
-            style: { fontSize: '14px', fontWeight: 'bold' },
-            formatter: (text, op) => [text, op.value + "%"]
-        },
-        tooltip: { theme: 'dark' }
+            formatter: (text, op) => [text, op.value + "%"],
+            style: { fontSize: '12px' }
+        }
     };
 
-    const chartDiv = document.querySelector("#chart");
-    chartDiv.innerHTML = "";
-    const chart = new ApexCharts(chartDiv, options);
-    chart.render();
+    const container = document.querySelector("#chart");
+    container.innerHTML = "";
+    new ApexCharts(container, options).render();
 }
 
-async function openDetail(stock) {
-    document.getElementById('detailTitle').innerText = stock + " Detay Grafiği";
-    document.getElementById('detailModal').style.display = 'flex';
-    document.getElementById('ov').style.display = 'block';
+async function openDetail(s) {
+    const modal = document.getElementById('detailModal');
+    modal.style.display = 'flex';
+    document.getElementById('modalTitle').innerText = s;
+    const dChart = document.getElementById('detailChart');
+    dChart.innerHTML = "Yükleniyor...";
 
-    const symbol = stock + ".IS";
-    // Yahoo Finance CORS hatasını aşmak için (Sadece candlestick verisi için proxy kullanımı)
-    // Eğer veri yüklenmiyorsa tarayıcıda geçici olarak CORS izinlerini açmak gerekebilir 
-    // veya Python ile bu veriyi önceden çekmek en sağlıklısıdır.
     try {
-        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=5m`);
-        const data = await response.json();
+        // AllOrigins Proxy kullanarak Yahoo CORS engelini aşma
+        const resp = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${s}.IS?range=1d&interval=5m`)}`);
+        const data = await resp.json();
         const res = data.chart.result[0];
         const seriesData = res.timestamp.map((t, i) => ({
             x: new Date(t * 1000),
             y: [res.indicators.quote[0].open[i], res.indicators.quote[0].high[i], res.indicators.quote[0].low[i], res.indicators.quote[0].close[i]]
-        })).filter(d => d.y[3] != null);
+        })).filter(d => d.y[0] != null);
 
-        const options = {
+        dChart.innerHTML = "";
+        new ApexCharts(dChart, {
             series: [{ data: seriesData }],
             chart: { type: 'candlestick', height: '100%', theme: 'dark' },
             xaxis: { type: 'datetime' }
-        };
-
-        const detailDiv = document.querySelector("#detailChart");
-        detailDiv.innerHTML = "";
-        new ApexCharts(detailDiv, options).render();
-    } catch (e) {
-        document.getElementById('detailChart').innerHTML = "<p style='text-align:center; padding-top:50px;'>Veri çekilemedi. (Tarayıcı CORS engeli veya Yahoo API kısıtlaması)</p>";
-    }
+        }).render();
+    } catch (e) { dChart.innerHTML = "Veri çekilemedi."; }
 }
 
-function closeDetail() {
-    document.getElementById('detailModal').style.display = 'none';
-    document.getElementById('ov').style.display = 'none';
+function openFear() {
+    const m = document.getElementById('fearModal');
+    m.style.display = 'flex';
+    new ApexCharts(document.getElementById('fearGauge'), {
+        series: [fearScore],
+        chart: { type: 'radialBar', height: 300 },
+        plotOptions: { radialBar: { startAngle: -135, endAngle: 135, dataLabels: { name: { show: false }, value: { fontSize: '30px', color: '#fff' } } } },
+        fill: { colors: [fearScore > 50 ? '#10b981' : '#ef4444'] },
+        labels: ['Korku Endeksi']
+    }).render();
 }
 
-function changeView(v) {
-    currentView = v;
-    document.getElementById('btn-bist100').className = v === 'bist100' ? 'active' : '';
-    document.getElementById('btn-mine').className = v === 'mine' ? 'active' : '';
-    renderChart();
-}
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 init();
